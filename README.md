@@ -1,2 +1,2 @@
 # Py-Jokenpo
- Mini game classico jokenpô, ultilizando interface grafica TkInter e MySQL.
+ Mini game classico jokenpô, utilizando interface gráfica TkInter e o data base MySQL.
