@@ -1,7 +1,8 @@
 from tkinter import * 
 from tkinter import ttk
-from db import cursor
+from db import cursor, conexao
 from random import randint
+from typing import Optional
 
 class Game:
 
@@ -9,7 +10,7 @@ class Game:
 
         """ Função que inicia a tela principal. 
         """
-
+        self.comando = ""
         self.root = root
         self.janelaPrincipal()
 
@@ -27,14 +28,14 @@ class Game:
         #Buttons
         self.btnIniciar = ttk.Button(self.root, text="INICIAR", command=self.iniciarJogo).grid(column=1, row=1)
         self.btnHistorico = ttk.Button(self.root, text="HISTORICO").grid(column=0, row=2)
-        self.btnSair = ttk.Button(self.root, text="SAIR", command=root.destroy).grid(column=2, row=2)
+        self.btnSairMenu = ttk.Button(self.root, text="SAIR", command=root.destroy).grid(column=2, row=2)
 
 
     def iniciarJogo(self):
 
         """ Função que gera a janela onde se joga o game, aqui você irá encontrar 4 botões, 1 para voltar pro INICIO, um para escolher PEDRA, outro para escolher PAPEL e o ultimo será para escolher TESOURA. 
         """
-
+        self.jogadas = []
         self.rodadas = 1
         self.x = 0
         self.y = 0
@@ -67,13 +68,24 @@ class Game:
         #Labels
         if idDoVencedor == 1:
             self.vencedor = ttk.Label(self.janelaVencedor, text="VENCEDOR\n  PLAYER!").grid(column=2, row=1)
+            self.comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("PLAYER", {self.rodadas - 1})'
+            cursor.execute(self.comando)
+            conexao.commit()
+            self.armazenaJogadas(self.jogadas)
+            conexao.close()
 
         elif idDoVencedor ==2:
             self.vencedor = ttk.Label(self.janelaVencedor, text="VENCEDOR\n COMPUTADOR!").grid(column=2, row=1)
-        self.qntRodadas = ttk.Label(self.janelaVencedor, text=f"QUANTIDADE DE RODADAS: {self.rodadas}").grid(column=2, row=2)
+            self.comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("COMPUTADOR", {self.rodadas - 1})'
+            cursor.execute(self.comando)
+            conexao.commit()
+            self.armazenaJogadas(self.jogadas)
+            conexao.close()
+
+        self.qntRodadas = ttk.Label(self.janelaVencedor, text=f"QUANTIDADE DE RODADAS: {self.rodadas - 1}").grid(column=2, row=2)
 
         #Buttons
-        self.btnSair = ttk.Button(self.janelaVencedor, text="VOLTAR PRO INICIO", command= lambda : self.voltarProInicio(1)).grid(column=0, row=0)
+        self.btnVoltaMenu = ttk.Button(self.janelaVencedor, text="VOLTAR PRO INICIO", command= lambda : self.voltarProInicio(1)).grid(column=0, row=0)
 
 
     def voltarProInicio(self, nmrDaJanela:int):
@@ -84,12 +96,17 @@ class Game:
         """
         
         if nmrDaJanela == 0:
+            comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("IMCOMPLETA", {self.rodadas})'
+            cursor.execute(comando)
+            conexao.commit()
+            conexao.close()
             self.janelaGame.destroy()
-            # Traz de volta a pagina anterior.
+            # Traz de volta a pagina Inicial
             self.root.deiconify()
+
         elif nmrDaJanela == 1:
             self.janelaVencedor.destroy()
-            # Traz de volta a pagina anterior.
+            # Traz de volta a pagina Inicial
             self.root.deiconify()
     
     #Logicas
@@ -120,23 +137,31 @@ class Game:
         :escolhaDoPlayer: Recebe um valor do tipo int.
         :return: Retorna o número de rodadas para ser utilizado em outras funções e armazenado no banco de dados.
         """
-
+    
         pc = self.escolhaComputador()
 
         embate = self.verificarEmbate(pc, escolhaDoPlayer)
+
+        self.DBresultado, self.DBjogadaPC, self.DBjogadaPlayer = self.converteJogada(embate, pc, escolhaDoPlayer)
     
         if embate == 0:
             print(f"Rodada Nº{self.rodadas} concluída - Resultado: EMPATE \nComputador:", self.x, "Jogador:", self.y)
+            self.jogadas.append([self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
+            print(self.jogadas)
             self.rodadas += 1
 
         elif embate == 1:
             self.y += 1
             print(f"Rodada Nº{self.rodadas} concluída - Resultado: PLAYER VENCEU! \nComputador:", self.x, "Jogador:", self.y)
+            self.jogadas.append([self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
+            print(self.jogadas)
             self.rodadas += 1
 
         elif embate == 2:
             self.x += 1
             print(f"Rodada Nº{self.rodadas} concluída - Resultado: COMPUTADOR VENCEU! \nComputador:", self.x, "Jogador:", self.y)
+            self.jogadas.append([self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
+            print(self.jogadas)
             self.rodadas += 1
 
         if self.x == 3:
@@ -170,6 +195,49 @@ class Game:
         elif computador == 0 and player == 2 or computador == 1 and player == 0 or computador == 2 and player == 1:
             resultado = 2  # Computador vence
             return resultado
+        
+    
+    def converteJogada(self, resultado:int, jogadaPC: Optional[int] = None, jogadaPlayer:Optional[int] = None):
+
+        if jogadaPC == 0:
+            jogadaPC = "PEDRA"
+        elif jogadaPC == 1:
+            jogadaPC = "PAPEL"
+        elif jogadaPC == 2:
+            jogadaPC = "TESOURA"
+
+        if jogadaPlayer == 0:
+            jogadaPlayer = "PEDRA"
+        elif jogadaPlayer == 1:
+            jogadaPlayer = "PAPEL"
+        elif jogadaPlayer == 2:
+            jogadaPlayer = "TESOURA"
+
+        if resultado == 0:
+            resultado = "EMPATE"
+        elif resultado == 1:
+            resultado = "PLAYER VENCEU"
+        elif resultado == 2:
+            resultado = "COMPUTADOR VENCEU"
+
+        return resultado, jogadaPC, jogadaPlayer
+    
+    def armazenaJogadas(self, jogadas):
+
+        self.comando = "SELECT MAX(id_partidas) AS ultimo_id FROM partidas;"
+        cursor.execute(self.comando)
+
+        resultado = cursor.fetchone()
+        self.ultimoId = resultado[0]
+
+        for rodada, jogadaPC, jogadaPlayer, resultado in jogadas:
+
+            self.comando = f'INSERT INTO jogadas (id_partida, rodada, move_player_1, move_player_2, resultado) VALUES ({self.ultimoId}, {rodada}, "{jogadaPC}", "{jogadaPlayer}", "{resultado}")'
+            cursor.execute(self.comando)
+            conexao.commit()
+
+        conexao.close()
+
 
 
 if __name__ == "__main__":
