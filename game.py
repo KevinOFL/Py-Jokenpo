@@ -23,12 +23,12 @@ class Game:
         root.title("JOKENPÔ")
 
         #Labels
-        self.titulo = ttk.Label(self.root ,text="JOKENPÔ").grid(column=1, row=0)
+        titulo = ttk.Label(self.root ,text="JOKENPÔ").grid(column=1, row=0)
 
         #Buttons
-        self.btnIniciar = ttk.Button(self.root, text="INICIAR", command=self.iniciarJogo).grid(column=1, row=1)
-        self.btnHistorico = ttk.Button(self.root, text="HISTORICO").grid(column=0, row=2)
-        self.btnSairMenu = ttk.Button(self.root, text="SAIR", command=root.destroy).grid(column=2, row=2)
+        btnIniciar = ttk.Button(self.root, text="INICIAR", command=self.iniciarJogo).grid(column=1, row=1)
+        btnHistorico = ttk.Button(self.root, text="HISTORICO", command=self.historico).grid(column=0, row=2)
+        btnSairMenu = ttk.Button(self.root, text="SAIR", command=root.destroy).grid(column=2, row=2)
 
 
     def iniciarJogo(self):
@@ -46,15 +46,15 @@ class Game:
         self.janelaGame = Toplevel(self.root)
 
         #Labels
-        self.pc = ttk.Label(self.janelaGame, text="COMPUTADOR").grid(column=0, row=0)
-        self.vs = ttk.Label(self.janelaGame, text="VS").grid(column=1, row=0)
-        self.player = ttk.Label(self.janelaGame, text="PLAYER").grid(column=2, row=0)
+        pc = ttk.Label(self.janelaGame, text="COMPUTADOR").grid(column=0, row=0)
+        vs = ttk.Label(self.janelaGame, text="VS").grid(column=1, row=0)
+        player = ttk.Label(self.janelaGame, text="PLAYER").grid(column=2, row=0)
 
         #Buttons
-        self.btnSairDoJogo = ttk.Button(self.janelaGame, text="SAIR", command= lambda : self.voltarProInicio(0)).grid(column=1, row=2)
-        self.pedra = ttk.Button(self.janelaGame, text="PEDRA", command= lambda: self.winner(0)).grid(column=0, row=3)
-        self.papel = ttk.Button(self.janelaGame, text="PAPEL", command= lambda: self.winner(1)).grid(column=1, row=3)
-        self.tesoura = ttk.Button(self.janelaGame, text="TESOURA", command= lambda: self.winner(2)).grid(column=2, row=3)
+        btnSairDoJogo = ttk.Button(self.janelaGame, text="SAIR", command= lambda : self.voltarProInicio(0)).grid(column=1, row=2)
+        pedra = ttk.Button(self.janelaGame, text="PEDRA", command= lambda: self.winner(0)).grid(column=0, row=3)
+        papel = ttk.Button(self.janelaGame, text="PAPEL", command= lambda: self.winner(1)).grid(column=1, row=3)
+        tesoura = ttk.Button(self.janelaGame, text="TESOURA", command= lambda: self.winner(2)).grid(column=2, row=3)
 
 
     def janelaDeVitoria(self, idDoVencedor:int):
@@ -67,7 +67,7 @@ class Game:
 
         #Labels
         if idDoVencedor == 1:
-            self.vencedor = ttk.Label(self.janelaVencedor, text="VENCEDOR\n  PLAYER!").grid(column=2, row=1)
+            vencedor = ttk.Label(self.janelaVencedor, text="VENCEDOR\n  PLAYER!").grid(column=2, row=1)
             self.comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("PLAYER", {self.rodadas - 1})'
             cursor.execute(self.comando)
             conexao.commit()
@@ -75,18 +75,29 @@ class Game:
             conexao.close()
 
         elif idDoVencedor ==2:
-            self.vencedor = ttk.Label(self.janelaVencedor, text="VENCEDOR\n COMPUTADOR!").grid(column=2, row=1)
+            vencedor = ttk.Label(self.janelaVencedor, text="VENCEDOR\n COMPUTADOR!").grid(column=2, row=1)
             self.comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("COMPUTADOR", {self.rodadas - 1})'
             cursor.execute(self.comando)
             conexao.commit()
             self.armazenaJogadas(self.jogadas)
             conexao.close()
 
-        self.qntRodadas = ttk.Label(self.janelaVencedor, text=f"QUANTIDADE DE RODADAS: {self.rodadas - 1}").grid(column=2, row=2)
+        qntRodadas = ttk.Label(self.janelaVencedor, text=f"QUANTIDADE DE RODADAS: {self.rodadas - 1}").grid(column=2, row=2)
 
         #Buttons
-        self.btnVoltaMenu = ttk.Button(self.janelaVencedor, text="VOLTAR PRO INICIO", command= lambda : self.voltarProInicio(1)).grid(column=0, row=0)
+        btnVoltaMenu = ttk.Button(self.janelaVencedor, text="VOLTAR PRO INICIO", command= lambda : self.voltarProInicio(1)).grid(column=0, row=0)
 
+    def historico(self):
+
+        self.root.withdraw()
+
+        self.janelaHistorico = Toplevel(self.root)
+
+        #Labels
+        titulo = ttk.Label(self.janelaHistorico, text="HISTORICO DE PARTIDAS").grid(column=1, row=0)
+
+        #Buttons
+        btnSairHistorico = ttk.Button(self.janelaHistorico, text="SAIR", command= lambda : self.voltarProInicio(2)).grid(column=0, row=0)
 
     def voltarProInicio(self, nmrDaJanela:int):
 
@@ -106,7 +117,10 @@ class Game:
 
         elif nmrDaJanela == 1:
             self.janelaVencedor.destroy()
-            # Traz de volta a pagina Inicial
+            self.root.deiconify()
+
+        elif nmrDaJanela == 2:
+            self.janelaHistorico.destroy()
             self.root.deiconify()
     
     #Logicas
@@ -222,7 +236,7 @@ class Game:
 
         return resultado, jogadaPC, jogadaPlayer
     
-    def armazenaJogadas(self, jogadas):
+    def armazenaJogadas(self, jogadas: list):
 
         self.comando = "SELECT MAX(id_partidas) AS ultimo_id FROM partidas;"
         cursor.execute(self.comando)
