@@ -8,7 +8,7 @@ from typing import Optional
 class Game:
 
     def __init__(self, root):
-        """ Função que inicia a tela principal. 
+        """ Função que inicia a tela scipal. 
         """
         self.comando = ""
         self.root = root
@@ -68,6 +68,8 @@ class Game:
         self.pc = ttk.Label(self.janelaGame, text="COMPUTADOR")
         self.vs = ttk.Label(self.janelaGame, text="VS")
         self.player = ttk.Label(self.janelaGame, text="PLAYER")
+        self.resultadoRodada = ttk.Label(self.janelaGame, text="")
+        self.rodadaAtual = ttk.Label(self.janelaGame, text="RODADA 1")
 
         # Buttons
         self.btnSairDoJogo = ttk.Button(
@@ -183,9 +185,10 @@ class Game:
             "move_player_1", text="MOVE COMPUTADOR")
         self.boxHistoricoRodadas.heading("move_player_2", text="MOVE PLAYER")
         self.boxHistoricoRodadas.heading("resultado", text="RESULTADO")
-        
+
         self.styleJanelaHistoricoDeJogadas()
         self.mostrarJogadas()
+
 
     # Logica
 
@@ -199,7 +202,7 @@ class Game:
             comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("IMCOMPLETA", {self.rodadas})'
             cursor.execute(comando)
             conexao.commit()
-
+            self.armazenaJogadas(self.jogadas)
             self.janelaGame.destroy()
             # Traz de volta a pagina Inicial
             self.root.deiconify()
@@ -226,15 +229,6 @@ class Game:
 
         computador = randint(0, 2)
 
-        if computador == 0:
-            print("Pedra")
-
-        elif computador == 1:
-            print("Papel")
-
-        elif computador == 2:
-            print("Tesoura")
-
         return computador
 
     def winner(self, escolhaDoPlayer: int):
@@ -251,29 +245,26 @@ class Game:
             embate, pc, escolhaDoPlayer)
 
         if embate == 0:
-            print(f"Rodada Nº{self.rodadas} concluída - Resultado: EMPATE \nComputador:",
-                  self.x, "Jogador:", self.y)
+            self.resultadoRodada.config(text="EMPATE")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            print(self.jogadas)
+            self.atulizarRodada()
             self.rodadas += 1
 
         elif embate == 1:
             self.y += 1
-            print(f"Rodada Nº{self.rodadas} concluída - Resultado: PLAYER VENCEU! \nComputador:",
-                  self.x, "Jogador:", self.y)
+            self.resultadoRodada.config(text="PLAYER\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            print(self.jogadas)
+            self.atulizarRodada()
             self.rodadas += 1
 
         elif embate == 2:
             self.x += 1
-            print(f"Rodada Nº{self.rodadas} concluída - Resultado: COMPUTADOR VENCEU! \nComputador:",
-                  self.x, "Jogador:", self.y)
+            self.resultadoRodada.config(text="COMPUTADOR\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            print(self.jogadas)
+            self.atulizarRodada()
             self.rodadas += 1
 
         if self.x == 3:
@@ -296,6 +287,7 @@ class Game:
         resultado = 0
 
         if computador == player:
+            self.resultadoRodada.config(text="EMPATE")
             return resultado  # EMPATE
 
         elif computador == 0 and player == 1 or computador == 1 and player == 2 or computador == 2 and player == 0:
@@ -368,6 +360,20 @@ class Game:
         for i in res:
             self.boxHistoricoRodadas.insert("", "end", values=i)
 
+    def atulizarRodada(self):
+        self.pedra.config(state="disable")
+        self.papel.config(state="disable")
+        self.tesoura.config(state="disable")
+        self.resultadoRodada.after(2200, self.limparResultado)
+
+    def limparResultado(self):
+        self.resultadoRodada.config(text="")
+        self.rodadaAtual.config(text=f"RODADA {self.rodadas}")
+        self.pedra.config(state="normal")
+        self.papel.config(state="normal")
+        self.tesoura.config(state="normal")
+
+
     # Funções de estilização das telas
 
     def styleJanelaInicial(self):
@@ -392,7 +398,7 @@ class Game:
         self.janelaGame.config(background="#D9D9D9")
         self.janelaGame.geometry("650x440+443+212")
         self.janelaGame.columnconfigure([0, 1, 2], weight=1)
-        self.janelaGame.rowconfigure([0, 1, 2, 3], weight=1)
+        self.janelaGame.rowconfigure([1, 2, 3, 4], weight=1)
 
         # Labels
         self.pc.grid(column=0, row=0, sticky="nw")
@@ -404,12 +410,18 @@ class Game:
         self.player.grid(column=2, row=0, sticky="ne")
         self.player.config(font=("Inter", 16, "bold"),
                            background="#D9D9D9", foreground="#3F3333")
+        self.resultadoRodada.grid(column=1, row=2)
+        self.resultadoRodada.config(font=("Inter", 30, "bold"), anchor="center", justify="center",
+                                    background="#D9D9D9", foreground="#3F3333")
+        self.rodadaAtual.grid(column=1, row=1)
+        self.rodadaAtual.config(font=("Inter", 25, "bold"), anchor="center", justify="center",
+                                background="#D9D9D9", foreground="#3F3333")
 
         # Buttons
-        self.btnSairDoJogo.grid(column=1, row=2)
-        self.pedra.grid(column=0, row=3)
-        self.papel.grid(column=1, row=3)
-        self.tesoura.grid(column=2, row=3)
+        self.btnSairDoJogo.grid(column=1, row=3)
+        self.pedra.grid(column=0, row=4)
+        self.papel.grid(column=1, row=4)
+        self.tesoura.grid(column=2, row=4)
 
     def styleJanelaDaVitoria(self):
 
@@ -463,7 +475,7 @@ class Game:
         estilo.configure("Treeview", foreground="#3F3333", font=("Inter", 10))
 
     def styleJanelaHistoricoDeJogadas(self):
-        
+
         # Janela
         self.janelaHistoricoDeRodadas.config(background="#D9D9D9")
         self.janelaHistoricoDeRodadas.geometry("650x440+400+100")
@@ -472,7 +484,8 @@ class Game:
 
         # Labels
         self.titulo.grid(column=1, row=0)
-        self.titulo.config(font=("Inter", 23, "bold"), background="#D9D9D9", foreground="#3F3333")
+        self.titulo.config(font=("Inter", 23, "bold"),
+                           background="#D9D9D9", foreground="#3F3333")
 
         # Buttons
         self.btnSairHistoricoJogadas.grid(column=0, row=0)
