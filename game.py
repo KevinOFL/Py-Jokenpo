@@ -8,28 +8,47 @@ from typing import Optional
 class Game:
 
     def __init__(self, root):
-        """ Função que inicia a tela principal. 
+        """ Função que inicia a tela scipal. 
         """
         self.comando = ""
         self.root = root
         self.janelaPrincipal()
 
+        # Configuração da janela
+        self.largura = 650
+        self.altura = 440
+
+        # Obtém as dimensões da tela
+        self.largura_tela = self.root.winfo_screenwidth()
+        self.altura_tela = self.root.winfo_screenheight()
+
+        # Calcula as coordenadas para centralizar a janela
+        self.x = (self.largura_tela - self.largura) // 2
+        self.y = (self.altura_tela - self.altura) // 2
+
+        # Define a geometria da janela
+        self.root.geometry(f"{self.largura}x{self.altura}+{self.x}+{self.y}")
+        self.root.config(background="#D9D9D9")
+        self.root.columnconfigure([0, 1, 2], weight=1)
+        self.root.rowconfigure([0, 1, 2], weight=1)
+
     def janelaPrincipal(self):
         """ Função que gera a janela principal do game onde se encontra, um botão para INICIAR, outro para SAIR e um outro para ver o HISTORICO de partidas. 
         """
-
         root.title("JOKENPÔ")
 
         # Labels
-        titulo = ttk.Label(self.root, text="JOKENPÔ").grid(column=1, row=0)
+        self.titulo = ttk.Label(self.root, text="JOKENPÔ")
 
         # Buttons
-        btnIniciar = ttk.Button(self.root, text="INICIAR",
-                                command=self.iniciarJogo).grid(column=1, row=1)
-        btnHistorico = ttk.Button(
-            self.root, text="HISTORICO", command=self.historico).grid(column=0, row=2)
-        btnSairMenu = ttk.Button(
-            self.root, text="SAIR", command=lambda: self.desligar(3)).grid(column=2, row=2)
+        self.btnIniciar = ttk.Button(
+            self.root, text="\nINICIAR\n", command=self.iniciarJogo,)
+        self.btnHistorico = ttk.Button(
+            self.root, text="\nHISTORICO\n", command=self.historico)
+        self.btnSairMenu = ttk.Button(
+            self.root, text="\nSAIR\n", command=lambda: self.desligar(3))
+
+        self.styleJanelaInicial()
 
     def iniciarJogo(self):
         """ Função que gera a janela onde se joga o game, aqui você irá encontrar 4 botões, 1 para voltar pro INICIO, um para escolher PEDRA, outro para escolher PAPEL e o ultimo será para escolher TESOURA. 
@@ -42,106 +61,117 @@ class Game:
         # Esconde a pagina anterior.
         self.root.withdraw()
 
+        # Janela
         self.janelaGame = Toplevel(self.root)
 
         # Labels
-        pc = ttk.Label(self.janelaGame, text="COMPUTADOR").grid(
-            column=0, row=0)
-        vs = ttk.Label(self.janelaGame, text="VS").grid(column=1, row=0)
-        player = ttk.Label(self.janelaGame, text="PLAYER").grid(
-            column=2, row=0)
+        self.pc = ttk.Label(self.janelaGame, text="COMPUTADOR")
+        self.vs = ttk.Label(self.janelaGame, text="VS")
+        self.player = ttk.Label(self.janelaGame, text="PLAYER")
+        self.resultadoRodada = ttk.Label(self.janelaGame, text="")
+        self.rodadaAtual = ttk.Label(self.janelaGame, text="RODADA 1")
 
         # Buttons
-        btnSairDoJogo = ttk.Button(
-            self.janelaGame, text="SAIR", command=lambda: self.desligar(0)).grid(column=1, row=2)
-        pedra = ttk.Button(self.janelaGame, text="PEDRA",
-                           command=lambda: self.winner(0)).grid(column=0, row=3)
-        papel = ttk.Button(self.janelaGame, text="PAPEL",
-                           command=lambda: self.winner(1)).grid(column=1, row=3)
-        tesoura = ttk.Button(self.janelaGame, text="TESOURA",
-                             command=lambda: self.winner(2)).grid(column=2, row=3)
+        self.btnSairDoJogo = ttk.Button(
+            self.janelaGame, text="SAIR", command=lambda: self.desligar(0))
+        self.pedra = ttk.Button(
+            self.janelaGame, text="  \nPEDRA\n  ", command=lambda: self.winner(0))
+        self.papel = ttk.Button(
+            self.janelaGame, text="  \nPAPEL\n  ", command=lambda: self.winner(1))
+        self.tesoura = ttk.Button(
+            self.janelaGame, text="  \nTESOURA\n  ", command=lambda: self.winner(2))
+
+        self.styleJanelaJogo()
 
     def janelaDeVitoria(self, idDoVencedor: int):
         """ Função que gera uma janela que mostra o vencedor, aqui aparece alguns dados referénte a partida que você iniciou, o vencedor e um botão para voltar para o INICIO e iniciar uma nova partida.
         :idDoVencedor: Recebe um valor tipo inteiro que baseado nele irá gerar uma tela com dados diferente. 
         """
 
+        # Janela
         self.janelaVencedor = Toplevel(self.root)
 
         # Labels
         if idDoVencedor == 1:
-            vencedor = ttk.Label(
-                self.janelaVencedor, text="VENCEDOR\n  PLAYER!").grid(column=2, row=1)
+            self.text = ttk.Label(self.janelaVencedor, text="VENCEDOR")
+            self.vencedor = ttk.Label(self.janelaVencedor, text="PLAYER")
             self.comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("PLAYER", {self.rodadas - 1})'
             cursor.execute(self.comando)
             conexao.commit()
             self.armazenaJogadas(self.jogadas)
 
         elif idDoVencedor == 2:
-            vencedor = ttk.Label(
-                self.janelaVencedor, text="VENCEDOR\n COMPUTADOR!").grid(column=2, row=1)
+            self.text = ttk.Label(self.janelaVencedor, text="VENCEDOR")
+            self.vencedor = ttk.Label(self.janelaVencedor, text="COMPUTADOR")
             self.comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("COMPUTADOR", {self.rodadas - 1})'
             cursor.execute(self.comando)
             conexao.commit()
             self.armazenaJogadas(self.jogadas)
 
-        qntRodadas = ttk.Label(
-            self.janelaVencedor, text=f"QUANTIDADE DE RODADAS: {self.rodadas - 1}").grid(column=2, row=2)
+        self.qntRodadas = ttk.Label(
+            self.janelaVencedor, text=f"QUANTIDADE DE RODADAS: {self.rodadas - 1}")
 
         # Buttons
-        btnVoltaMenu = ttk.Button(self.janelaVencedor, text="VOLTAR PRO INICIO",
-                                  command=lambda: self.desligar(1)).grid(column=0, row=0)
+        self.btnVoltaMenu = ttk.Button(
+            self.janelaVencedor, text="VOLTAR PRO INICIO", command=lambda: self.desligar(1))
+
+        self.styleJanelaDaVitoria()
 
     def historico(self):
 
-        ids = self.mostrarIdDasPartidas()
+        ids = self.pegarIds()
 
         self.root.withdraw()
 
+        # Janela
         self.janelaHistorico = Toplevel(self.root)
 
         # Labels
-        titulo = ttk.Label(self.janelaHistorico,
-                           text="HISTORICO DE PARTIDAS").grid(column=0, row=0)
-        obs = ttk.Label(self.janelaHistorico, text="Escolha o ID que deseja ver o historico de jogadas: ").grid(column=0, row=1)
-        # Select
-        self.escolhaId = ttk.Combobox(self.janelaHistorico, values= ids)
-        self.escolhaId.grid(column=0, row=2)
+        self.titulo = ttk.Label(
+            self.janelaHistorico, text="HISTORICO DE PARTIDAS")
+        self.obs = ttk.Label(
+            self.janelaHistorico, text="Escolha um ID para ver o historico de jogadas:")
 
-        
+        # Select
+        self.escolhaId = ttk.Combobox(self.janelaHistorico, values=ids)
+
         # Buttons
-        btnSairHistorico = ttk.Button(
-            self.janelaHistorico, text="SAIR", command=lambda: self.desligar(2)).grid(column=0, row=4)
-        btnVerPartida = ttk.Button(
-            self.janelaHistorico, text="VER JOGADAS", command=lambda: self.historicoDeJogadas()).grid(column=0, row=3)
+        self.btnSairHistorico = ttk.Button(
+            self.janelaHistorico, text="SAIR", command=lambda: self.desligar(2))
+        self.btnVerPartida = ttk.Button(
+            self.janelaHistorico, text="VER JOGADAS", command=lambda: self.historicoDeJogadas())
 
         # Box
-        self.boxHistorico = ttk.Treeview(self.janelaHistorico, columns=(
-            "id_partidas", "vencedor", "rodadas"), show="headings")
-        self.boxHistorico.column("id_partidas", minwidth=0, width=80)
-        self.boxHistorico.column("vencedor", minwidth=0, width=125)
-        self.boxHistorico.column("rodadas", minwidth=0, width=80)
+        self.boxHistorico = ttk.Treeview(
+            self.janelaHistorico, columns=("id_partidas", "vencedor", "rodadas"), show="headings")
+        self.boxHistorico.column("id_partidas", minwidth=0, width=215)
+        self.boxHistorico.column("vencedor", minwidth=0, width=215)
+        self.boxHistorico.column("rodadas", minwidth=0, width=217)
         self.boxHistorico.heading("id_partidas", text="ID PARTIDA")
         self.boxHistorico.heading("vencedor", text="VENCEDOR")
         self.boxHistorico.heading("rodadas", text="RODADAS")
-        self.boxHistorico.grid(padx=10, pady=10)
+
+        self.styleJanelaHistorico()
         self.mostrarPartidas()
 
     def historicoDeJogadas(self):
 
         self.id = self.escolhaId.get()
 
+        # Janela
         self.janelaHistoricoDeRodadas = Toplevel(self.root)
 
         # Labels
-        titulo = ttk.Label(self.janelaHistoricoDeRodadas,
-                           text=f"HISTORICO DE JOGADAS\nPARTIDA ID: {self.id}").grid(column=1, row=0)
-        
+        self.titulo = ttk.Label(
+            self.janelaHistoricoDeRodadas, text=f"HISTORICO DE JOGADAS\nPARTIDA ID: {self.id}")
+
         # Buttons
-        btnSairHistoricoJogadas = ttk.Button(self.janelaHistoricoDeRodadas, text="FECHAR", command= lambda: self.desligar(4)).grid(column=0, row=0)
+        self.btnSairHistoricoJogadas = ttk.Button(
+            self.janelaHistoricoDeRodadas, text="FECHAR", command=lambda: self.desligar(4))
 
         # Box
-        self.boxHistoricoRodadas = ttk.Treeview(self.janelaHistoricoDeRodadas, columns= ("cod_jogada", "id_partida", "rodada", "move_player_1", "move_player_2", "resultado"), show="headings")
+        self.boxHistoricoRodadas = ttk.Treeview(
+            self.janelaHistoricoDeRodadas, columns=("cod_jogada", "id_partida", "rodada", "move_player_1", "move_player_2", "resultado"), show="headings")
         self.boxHistoricoRodadas.column("cod_jogada", minwidth=0, width=80)
         self.boxHistoricoRodadas.column("id_partida", minwidth=0, width=80)
         self.boxHistoricoRodadas.column("rodada", minwidth=0, width=80)
@@ -151,11 +181,16 @@ class Game:
         self.boxHistoricoRodadas.heading("cod_jogada", text="COD JOGADA")
         self.boxHistoricoRodadas.heading("id_partida", text="ID PARTIDA")
         self.boxHistoricoRodadas.heading("rodada", text="RODADA Nº")
-        self.boxHistoricoRodadas.heading("move_player_1", text="MOVE COMPUTADOR")
+        self.boxHistoricoRodadas.heading(
+            "move_player_1", text="MOVE COMPUTADOR")
         self.boxHistoricoRodadas.heading("move_player_2", text="MOVE PLAYER")
         self.boxHistoricoRodadas.heading("resultado", text="RESULTADO")
-        self.boxHistoricoRodadas.grid(padx=10, pady=10)
+
+        self.styleJanelaHistoricoDeJogadas()
         self.mostrarJogadas()
+
+
+    # Logica
 
     def desligar(self, nmrDaJanela: int):
         """ Função que faz junção com os Button do Tkinter.
@@ -167,7 +202,7 @@ class Game:
             comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("IMCOMPLETA", {self.rodadas})'
             cursor.execute(comando)
             conexao.commit()
-
+            self.armazenaJogadas(self.jogadas)
             self.janelaGame.destroy()
             # Traz de volta a pagina Inicial
             self.root.deiconify()
@@ -187,23 +222,12 @@ class Game:
         elif nmrDaJanela == 4:
             self.janelaHistoricoDeRodadas.destroy()
 
-    # Logicas
-
     def escolhaComputador(self):
         """ Função que gera um número de 0 a 2 que faz referência a escolha do COMPUTADOR.
         :return: Retorna o número gerado.
         """
 
         computador = randint(0, 2)
-
-        if computador == 0:
-            print("Pedra")
-
-        elif computador == 1:
-            print("Papel")
-
-        elif computador == 2:
-            print("Tesoura")
 
         return computador
 
@@ -221,29 +245,26 @@ class Game:
             embate, pc, escolhaDoPlayer)
 
         if embate == 0:
-            print(f"Rodada Nº{self.rodadas} concluída - Resultado: EMPATE \nComputador:",
-                  self.x, "Jogador:", self.y)
+            self.resultadoRodada.config(text="EMPATE")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            print(self.jogadas)
+            self.atulizarRodada()
             self.rodadas += 1
 
         elif embate == 1:
             self.y += 1
-            print(f"Rodada Nº{self.rodadas} concluída - Resultado: PLAYER VENCEU! \nComputador:",
-                  self.x, "Jogador:", self.y)
+            self.resultadoRodada.config(text="PLAYER\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            print(self.jogadas)
+            self.atulizarRodada()
             self.rodadas += 1
 
         elif embate == 2:
             self.x += 1
-            print(f"Rodada Nº{self.rodadas} concluída - Resultado: COMPUTADOR VENCEU! \nComputador:",
-                  self.x, "Jogador:", self.y)
+            self.resultadoRodada.config(text="COMPUTADOR\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            print(self.jogadas)
+            self.atulizarRodada()
             self.rodadas += 1
 
         if self.x == 3:
@@ -266,6 +287,7 @@ class Game:
         resultado = 0
 
         if computador == player:
+            self.resultadoRodada.config(text="EMPATE")
             return resultado  # EMPATE
 
         elif computador == 0 and player == 1 or computador == 1 and player == 2 or computador == 2 and player == 0:
@@ -322,8 +344,8 @@ class Game:
 
         for i in res:
             self.boxHistorico.insert("", "end", values=i)
-    
-    def mostrarIdDasPartidas(self):
+
+    def pegarIds(self):
         self.comando = "SELECT id_partidas FROM partidas order by id_partidas"
         cursor.execute(self.comando)
         res = cursor.fetchall()
@@ -337,7 +359,140 @@ class Game:
 
         for i in res:
             self.boxHistoricoRodadas.insert("", "end", values=i)
-        
+
+    def atulizarRodada(self):
+        self.pedra.config(state="disable")
+        self.papel.config(state="disable")
+        self.tesoura.config(state="disable")
+        self.resultadoRodada.after(2200, self.limparResultado)
+
+    def limparResultado(self):
+        self.resultadoRodada.config(text="")
+        self.rodadaAtual.config(text=f"RODADA {self.rodadas}")
+        self.pedra.config(state="normal")
+        self.papel.config(state="normal")
+        self.tesoura.config(state="normal")
+
+
+    # Funções de estilização das telas
+
+    def styleJanelaInicial(self):
+
+        estilo = ttk.Style()
+
+        # Labels
+        self.titulo.config(font=("Inter", 86, "bold"),
+                           foreground="#3F3333", background="#D9D9D9")
+        self.titulo.grid(column=0, row=0, columnspan=3)
+
+        # Buttons
+        estilo.configure("TButton", background="#3F3333",
+                         foreground="#3F3333", font=("Inter", 15))
+        self.btnIniciar.grid(column=1, row=1)
+        self.btnHistorico.grid(column=0, row=2)
+        self.btnSairMenu.grid(column=2, row=2)
+
+    def styleJanelaJogo(self):
+
+        # Janela
+        self.janelaGame.config(background="#D9D9D9")
+        self.janelaGame.geometry("650x440+443+212")
+        self.janelaGame.columnconfigure([0, 1, 2], weight=1)
+        self.janelaGame.rowconfigure([1, 2, 3, 4], weight=1)
+
+        # Labels
+        self.pc.grid(column=0, row=0, sticky="nw")
+        self.pc.config(font=("Inter", 16, "bold"),
+                       background="#D9D9D9", foreground="#3F3333")
+        self.vs.grid(column=1, row=0, sticky="n")
+        self.vs.config(font=("Inter", 30, "bold"),
+                       background="#D9D9D9", foreground="#3F3333")
+        self.player.grid(column=2, row=0, sticky="ne")
+        self.player.config(font=("Inter", 16, "bold"),
+                           background="#D9D9D9", foreground="#3F3333")
+        self.resultadoRodada.grid(column=1, row=2)
+        self.resultadoRodada.config(font=("Inter", 30, "bold"), anchor="center", justify="center",
+                                    background="#D9D9D9", foreground="#3F3333")
+        self.rodadaAtual.grid(column=1, row=1)
+        self.rodadaAtual.config(font=("Inter", 25, "bold"), anchor="center", justify="center",
+                                background="#D9D9D9", foreground="#3F3333")
+
+        # Buttons
+        self.btnSairDoJogo.grid(column=1, row=3)
+        self.pedra.grid(column=0, row=4)
+        self.papel.grid(column=1, row=4)
+        self.tesoura.grid(column=2, row=4)
+
+    def styleJanelaDaVitoria(self):
+
+        # Janela
+        self.janelaVencedor.config(background="#D9D9D9")
+        self.janelaVencedor.geometry("650x440+443+212")
+        self.janelaVencedor.columnconfigure([0, 1, 2], weight=1)
+        self.janelaVencedor.rowconfigure([1, 2, 3], weight=1)
+
+        # Labels
+        self.text.grid(column=0, row=1, columnspan=3)
+        self.text.config(font=("Inter", 25),
+                         background="#D9D9D9", foreground="#3F3333")
+        self.vencedor.grid(column=0, row=2, columnspan=3)
+        self.vencedor.config(font=("Inter", 45, "bold"),
+                             background="#D9D9D9", foreground="#3F3333")
+        self.qntRodadas.grid(column=0, row=3, columnspan=3)
+        self.qntRodadas.config(
+            font=("Inter", 20), background="#D9D9D9", foreground="#3F3333")
+
+        # Buttons
+        self.btnVoltaMenu.grid(column=0, row=0, sticky="nw")
+
+    def styleJanelaHistorico(self):
+
+        estilo = ttk.Style()
+
+        # Janela
+        self.janelaHistorico.config(background="#D9D9D9")
+        self.janelaHistorico.geometry("650x440+443+212")
+        self.janelaHistorico.rowconfigure([0, 1, 2, 3, 4], weight=1)
+
+        # Labels
+        self.titulo.grid(column=1, row=0, columnspan=3, sticky="nswe")
+        self.titulo.config(font=("Inter", 20, "bold"),
+                           background="#D9D9D9", foreground="#3F3333")
+        self.obs.grid(column=0, row=1, columnspan=3)
+        self.obs.config(font=("Inter", 12, "bold"),
+                        background="#D9D9D9", foreground="#3F3333")
+
+        # Select
+        self.escolhaId.grid(column=3, row=1)
+        self.escolhaId.config(font=("Inter", 11, "bold"), width=4)
+
+        # Buttons
+        self.btnSairHistorico.grid(column=0, row=0)
+        self.btnVerPartida.grid(column=3, row=3)
+
+        # Box
+        self.boxHistorico.grid(column=0, row=4, columnspan=4)
+        estilo.configure("Treeview", foreground="#3F3333", font=("Inter", 10))
+
+    def styleJanelaHistoricoDeJogadas(self):
+
+        # Janela
+        self.janelaHistoricoDeRodadas.config(background="#D9D9D9")
+        self.janelaHistoricoDeRodadas.geometry("650x440+400+100")
+        self.janelaHistoricoDeRodadas.columnconfigure([0, 1], weight=1)
+        self.janelaHistoricoDeRodadas.rowconfigure([0, 1], weight=1)
+
+        # Labels
+        self.titulo.grid(column=1, row=0)
+        self.titulo.config(font=("Inter", 23, "bold"),
+                           background="#D9D9D9", foreground="#3F3333")
+
+        # Buttons
+        self.btnSairHistoricoJogadas.grid(column=0, row=0)
+
+        # Box
+        self.boxHistoricoRodadas.grid(column=0, row=1, columnspan=2)
+
 
 if __name__ == "__main__":
     root = Tk()
