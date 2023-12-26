@@ -16,13 +16,8 @@
 ### Autor e Desenvolvedor -  [KevinOFL](https://github.com/KevinOFL)
 
 ### Licença
-Este projeto está sob a linceça MIT, para saber mais leia [LICENSE](LICENSE)
+Este projeto está sob a licença MIT, para saber mais leia [LICENSE](LICENSE).
 
 ### Agradecimentos
 * Obrigado a todos que tenham lido até aqui, fico muito feliz de ver que sentiram um pouco interesse no meu mini game ❤️.
 * Divulguem e me mostrem novas atualizações desse pequeno projeto.
-
-
-
-
-
