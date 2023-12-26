@@ -8,7 +8,7 @@ from typing import Optional
 class Game:
 
     def __init__(self, root):
-        """ Função que inicia a tela scipal. 
+        """ Função que inicia a tela principal.
         """
         self.comando = ""
         self.root = root
