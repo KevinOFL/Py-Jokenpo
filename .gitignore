@@ -153,3 +153,4 @@ cython_debug/
 
 #Past venv jokenpo
 jokenpo/
+requirements.txt
