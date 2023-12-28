@@ -3,6 +3,7 @@ from tkinter import ttk
 from db import cursor, conexao
 from random import randint
 from typing import Optional
+from PIL import Image, ImageTk
 
 
 class Game:
@@ -66,7 +67,7 @@ class Game:
 
         # Labels
         self.pc = ttk.Label(self.janelaGame, text="COMPUTADOR")
-        self.vs = ttk.Label(self.janelaGame, text="VS")
+        self.vs = ttk.Label(self.janelaGame, text="VS\n0 - 0")
         self.player = ttk.Label(self.janelaGame, text="PLAYER")
         self.resultadoRodada = ttk.Label(self.janelaGame, text="")
         self.rodadaAtual = ttk.Label(self.janelaGame, text="RODADA 1")
@@ -80,6 +81,10 @@ class Game:
             self.janelaGame, text="  \nPAPEL\n  ", command=lambda: self.winner(1))
         self.tesoura = ttk.Button(
             self.janelaGame, text="  \nTESOURA\n  ", command=lambda: self.winner(2))
+
+        # Labels com imagen
+        self.imgEscolhaPc = ttk.Label(self.janelaGame)
+        self.imgEscolhaPlayer = ttk.Label(self.janelaGame)
 
         self.styleJanelaJogo()
 
@@ -189,7 +194,6 @@ class Game:
         self.styleJanelaHistoricoDeJogadas()
         self.mostrarJogadas()
 
-
     # Logica
 
     def desligar(self, nmrDaJanela: int):
@@ -237,18 +241,19 @@ class Game:
         :return: Retorna o número de rodadas para ser utilizado em outras funções e armazenado no banco de dados.
         """
 
-        pc = self.escolhaComputador()
+        self.escolhaPlayer = escolhaDoPlayer
+        self.pc = self.escolhaComputador()
 
-        embate = self.verificarEmbate(pc, escolhaDoPlayer)
+        embate = self.verificarEmbate(self.pc, escolhaDoPlayer)
 
         self.DBresultado, self.DBjogadaPC, self.DBjogadaPlayer = self.converteJogada(
-            embate, pc, escolhaDoPlayer)
+            embate, self.pc, escolhaDoPlayer)
 
         if embate == 0:
             self.resultadoRodada.config(text="EMPATE")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            self.atulizarRodada()
+            self.congelaRodada()
             self.rodadas += 1
 
         elif embate == 1:
@@ -256,7 +261,7 @@ class Game:
             self.resultadoRodada.config(text="PLAYER\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            self.atulizarRodada()
+            self.congelaRodada()
             self.rodadas += 1
 
         elif embate == 2:
@@ -264,7 +269,7 @@ class Game:
             self.resultadoRodada.config(text="COMPUTADOR\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            self.atulizarRodada()
+            self.congelaRodada()
             self.rodadas += 1
 
         if self.x == 3:
@@ -360,19 +365,46 @@ class Game:
         for i in res:
             self.boxHistoricoRodadas.insert("", "end", values=i)
 
-    def atulizarRodada(self):
+    def atualizarImagen(self, escolhaPc, escolhaPlayer):
+
+        caminhoImagens = {
+            0: "D:\\Repositorios\\Py-Jokenpo\\Imagens\\pedra.png",
+            1: "D:\\Repositorios\\Py-Jokenpo\\Imagens\\papel.png",
+            2: "D:\\Repositorios\\Py-Jokenpo\\Imagens\\tesoura.png"
+        }
+
+        imgPc = Image.open(caminhoImagens[escolhaPc])
+        imgPlayer = Image.open(caminhoImagens[escolhaPlayer])
+
+        tamanho = (100, 100)
+        imgPc = imgPc.resize(tamanho)
+        imgPlayer = imgPlayer.resize(tamanho)
+
+        imgPc_Tt = ImageTk.PhotoImage(imgPc)
+        imgPlayer_Tk = ImageTk.PhotoImage(imgPlayer)
+
+        self.imgEscolhaPc.config(image=imgPc_Tt)
+        self.imgEscolhaPlayer.config(image=imgPlayer_Tk)
+
+        self.imgEscolhaPc.imagem = imgPc_Tt
+        self.imgEscolhaPlayer.imagem = imgPlayer_Tk
+
+    def congelaRodada(self):
         self.pedra.config(state="disable")
         self.papel.config(state="disable")
         self.tesoura.config(state="disable")
-        self.resultadoRodada.after(2200, self.limparResultado)
+        self.atualizarImagen(self.pc, self.escolhaPlayer)
+        self.resultadoRodada.after(2500, self.atualizaResultados)
 
-    def limparResultado(self):
+    def atualizaResultados(self):
         self.resultadoRodada.config(text="")
         self.rodadaAtual.config(text=f"RODADA {self.rodadas}")
+        self.vs.config(text=f"VS\n{self.x} - {self.y}")
+        self.imgEscolhaPc.config(image="")
+        self.imgEscolhaPlayer.config(image="")
         self.pedra.config(state="normal")
         self.papel.config(state="normal")
         self.tesoura.config(state="normal")
-
 
     # Funções de estilização das telas
 
@@ -405,7 +437,7 @@ class Game:
         self.pc.config(font=("Inter", 16, "bold"),
                        background="#D9D9D9", foreground="#3F3333")
         self.vs.grid(column=1, row=0, sticky="n")
-        self.vs.config(font=("Inter", 30, "bold"),
+        self.vs.config(font=("Inter", 30, "bold"), anchor="center", justify="center",
                        background="#D9D9D9", foreground="#3F3333")
         self.player.grid(column=2, row=0, sticky="ne")
         self.player.config(font=("Inter", 16, "bold"),
@@ -422,6 +454,12 @@ class Game:
         self.pedra.grid(column=0, row=4)
         self.papel.grid(column=1, row=4)
         self.tesoura.grid(column=2, row=4)
+
+        # Labels com imagen
+        self.imgEscolhaPc.grid(column=0, row=1, rowspan=2)
+        self.imgEscolhaPc.config(anchor="center", justify="center", background="#D9D9D9", foreground="#3F3333")
+        self.imgEscolhaPlayer.grid(column=2, row=1, rowspan=2)
+        self.imgEscolhaPlayer.config(anchor="center", justify="center", background="#D9D9D9", foreground="#3F3333")
 
     def styleJanelaDaVitoria(self):
 
