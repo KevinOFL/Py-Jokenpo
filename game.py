@@ -1,16 +1,19 @@
 from tkinter import *
 from tkinter import ttk
-from db import cursor, conexao
+from db import  criarConexao
 from random import randint
 from typing import Optional
 from PIL import Image, ImageTk
 
+conexao = criarConexao("dbjokenpo")
+cursor = conexao.cursor()
 
 class Game:
 
     def __init__(self, root):
         """ Função que inicia a tela principal.
         """
+
         self.comando = ""
         self.root = root
         self.janelaPrincipal()
@@ -148,11 +151,11 @@ class Game:
 
         # Box
         self.boxHistorico = ttk.Treeview(
-            self.janelaHistorico, columns=("id_partidas", "vencedor", "rodadas"), show="headings")
-        self.boxHistorico.column("id_partidas", minwidth=0, width=215)
+            self.janelaHistorico, columns=("id_partida", "vencedor", "rodadas"), show="headings")
+        self.boxHistorico.column("id_partida", minwidth=0, width=215)
         self.boxHistorico.column("vencedor", minwidth=0, width=215)
         self.boxHistorico.column("rodadas", minwidth=0, width=217)
-        self.boxHistorico.heading("id_partidas", text="ID PARTIDA")
+        self.boxHistorico.heading("id_partida", text="ID PARTIDA")
         self.boxHistorico.heading("vencedor", text="VENCEDOR")
         self.boxHistorico.heading("rodadas", text="RODADAS")
 
@@ -330,7 +333,7 @@ class Game:
 
     def armazenaJogadas(self, jogadas: list):
 
-        self.comando = "SELECT MAX(id_partidas) AS ultimo_id FROM partidas;"
+        self.comando = "SELECT MAX(id_partida) AS ultimo_id FROM partidas;"
         cursor.execute(self.comando)
 
         resultado = cursor.fetchone()
@@ -338,12 +341,12 @@ class Game:
 
         for rodada, jogadaPC, jogadaPlayer, resultado in jogadas:
 
-            self.comando = f'INSERT INTO jogadas (id_partida, rodada, move_player_1, move_player_2, resultado) VALUES ({self.ultimoId}, {rodada}, "{jogadaPC}", "{jogadaPlayer}", "{resultado}")'
+            self.comando = f'INSERT INTO rodadas (id_partida, rodada, move_player_1, move_player_2, resultado) VALUES ({self.ultimoId}, {rodada}, "{jogadaPC}", "{jogadaPlayer}", "{resultado}")'
             cursor.execute(self.comando)
             conexao.commit()
 
     def mostrarPartidas(self):
-        self.comando = "SELECT * FROM partidas order by id_partidas"
+        self.comando = "SELECT * FROM partidas order by id_partida"
         cursor.execute(self.comando)
         res = cursor.fetchall()
 
@@ -351,14 +354,14 @@ class Game:
             self.boxHistorico.insert("", "end", values=i)
 
     def pegarIds(self):
-        self.comando = "SELECT id_partidas FROM partidas order by id_partidas"
+        self.comando = "SELECT id_partida FROM partidas order by id_partida"
         cursor.execute(self.comando)
         res = cursor.fetchall()
 
         return res
 
     def mostrarJogadas(self):
-        self.comando = f'SELECT * FROM jogadas where id_partida ="{self.id}" order by rodada'
+        self.comando = f'SELECT * FROM rodadas where id_partida ="{self.id}" order by rodada'
         cursor.execute(self.comando)
         res = cursor.fetchall()
 
@@ -368,9 +371,9 @@ class Game:
     def atualizarImagen(self, escolhaPc, escolhaPlayer):
 
         caminhoImagens = {
-            0: "D:\\Repositorios\\Py-Jokenpo\\Imagens\\pedra.png",
-            1: "D:\\Repositorios\\Py-Jokenpo\\Imagens\\papel.png",
-            2: "D:\\Repositorios\\Py-Jokenpo\\Imagens\\tesoura.png"
+            0: "E:\\Repositorios\\Py-Jokenpo\\Imagens\\pedra.png",
+            1: "E:\\Repositorios\\Py-Jokenpo\\Imagens\\papel.png",
+            2: "E:\\Repositorios\\Py-Jokenpo\\Imagens\\tesoura.png"
         }
 
         imgPc = Image.open(caminhoImagens[escolhaPc])
