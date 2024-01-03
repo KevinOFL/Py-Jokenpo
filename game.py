@@ -1,15 +1,16 @@
 from tkinter import *
 from tkinter import ttk
-from db import cursor, conexao
+from db import  criarConexao
 from random import randint
-from typing import Optional
+from PIL import Image, ImageTk
 
+conexao = criarConexao("dbjokenpo")
+cursor = conexao.cursor()
 
 class Game:
 
     def __init__(self, root):
-        """ Função que inicia a tela principal.
-        """
+        """ Função que inicia a tela principal."""
         self.comando = ""
         self.root = root
         self.janelaPrincipal()
@@ -33,8 +34,7 @@ class Game:
         self.root.rowconfigure([0, 1, 2], weight=1)
 
     def janelaPrincipal(self):
-        """ Função que gera a janela principal do game onde se encontra, um botão para INICIAR, outro para SAIR e um outro para ver o HISTORICO de partidas. 
-        """
+        """ Função que gera o widgets INICIAR, HISTORICO e SAIR da Janela Inicial. """
         root.title("JOKENPÔ")
 
         # Labels
@@ -51,8 +51,7 @@ class Game:
         self.styleJanelaInicial()
 
     def iniciarJogo(self):
-        """ Função que gera a janela onde se joga o game, aqui você irá encontrar 4 botões, 1 para voltar pro INICIO, um para escolher PEDRA, outro para escolher PAPEL e o ultimo será para escolher TESOURA. 
-        """
+        """ Função que gera o widgets da janela do game. """
         self.jogadas = []
         self.rodadas = 1
         self.x = 0
@@ -66,7 +65,7 @@ class Game:
 
         # Labels
         self.pc = ttk.Label(self.janelaGame, text="COMPUTADOR")
-        self.vs = ttk.Label(self.janelaGame, text="VS")
+        self.vs = ttk.Label(self.janelaGame, text="VS\n0 - 0")
         self.player = ttk.Label(self.janelaGame, text="PLAYER")
         self.resultadoRodada = ttk.Label(self.janelaGame, text="")
         self.rodadaAtual = ttk.Label(self.janelaGame, text="RODADA 1")
@@ -81,13 +80,15 @@ class Game:
         self.tesoura = ttk.Button(
             self.janelaGame, text="  \nTESOURA\n  ", command=lambda: self.winner(2))
 
+        # Labels com imagen
+        self.imgEscolhaPc = ttk.Label(self.janelaGame)
+        self.imgEscolhaPlayer = ttk.Label(self.janelaGame)
+
         self.styleJanelaJogo()
 
     def janelaDeVitoria(self, idDoVencedor: int):
-        """ Função que gera uma janela que mostra o vencedor, aqui aparece alguns dados referénte a partida que você iniciou, o vencedor e um botão para voltar para o INICIO e iniciar uma nova partida.
-        :idDoVencedor: Recebe um valor tipo inteiro que baseado nele irá gerar uma tela com dados diferente. 
-        """
-
+        """ Função que gera os widgets da janela do vencedor e efetua o armazenamento de dados coletados durante a partida.
+         O armazenamento e feito com auxilio de outra função. """
         # Janela
         self.janelaVencedor = Toplevel(self.root)
 
@@ -118,7 +119,8 @@ class Game:
         self.styleJanelaDaVitoria()
 
     def historico(self):
-
+        """ Função que gera os widgets da janela do historico de partidas.
+        Com o auxilio de uma função que recolhe os dados do banco de dados é mostrado no Treeview todas as partidas e seus dados. """
         ids = self.pegarIds()
 
         self.root.withdraw()
@@ -139,23 +141,24 @@ class Game:
         self.btnSairHistorico = ttk.Button(
             self.janelaHistorico, text="SAIR", command=lambda: self.desligar(2))
         self.btnVerPartida = ttk.Button(
-            self.janelaHistorico, text="VER JOGADAS", command=lambda: self.historicoDeJogadas())
+            self.janelaHistorico, text="VER JOGADAS", command=lambda: self.historicoDeRodadas())
 
         # Box
         self.boxHistorico = ttk.Treeview(
-            self.janelaHistorico, columns=("id_partidas", "vencedor", "rodadas"), show="headings")
-        self.boxHistorico.column("id_partidas", minwidth=0, width=215)
+            self.janelaHistorico, columns=("id_partida", "vencedor", "rodadas"), show="headings")
+        self.boxHistorico.column("id_partida", minwidth=0, width=215)
         self.boxHistorico.column("vencedor", minwidth=0, width=215)
         self.boxHistorico.column("rodadas", minwidth=0, width=217)
-        self.boxHistorico.heading("id_partidas", text="ID PARTIDA")
+        self.boxHistorico.heading("id_partida", text="ID PARTIDA")
         self.boxHistorico.heading("vencedor", text="VENCEDOR")
         self.boxHistorico.heading("rodadas", text="RODADAS")
 
         self.styleJanelaHistorico()
         self.mostrarPartidas()
 
-    def historicoDeJogadas(self):
-
+    def historicoDeRodadas(self):
+        """ Função que gera os widgets da janela do historico de rodadas.
+        Possui os mesmo formato da janela historico de partidas com uma função auxiliar para buscar os dados e ser visualmente mostrado no Treeview. """
         self.id = self.escolhaId.get()
 
         # Janela
@@ -181,23 +184,21 @@ class Game:
         self.boxHistoricoRodadas.heading("cod_jogada", text="COD JOGADA")
         self.boxHistoricoRodadas.heading("id_partida", text="ID PARTIDA")
         self.boxHistoricoRodadas.heading("rodada", text="RODADA Nº")
-        self.boxHistoricoRodadas.heading(
-            "move_player_1", text="MOVE COMPUTADOR")
+        self.boxHistoricoRodadas.heading("move_player_1", text="MOVE COMPUTADOR")
         self.boxHistoricoRodadas.heading("move_player_2", text="MOVE PLAYER")
         self.boxHistoricoRodadas.heading("resultado", text="RESULTADO")
 
         self.styleJanelaHistoricoDeJogadas()
         self.mostrarJogadas()
 
-
     # Logica
 
     def desligar(self, nmrDaJanela: int):
         """ Função que faz junção com os Button do Tkinter.
         Cada janela possui um id e baseado nele a função valida e fecha a janela e volta pro INICIO.
-        :nmrDaJanela: Recebe um valor tipo int que indentifica a janela.
-        """
-
+        Na janela de Id = 0 é a janela do game que caso o usuário sai no meio da partida e armazenado no banco de dados as rodadas jogadas
+        mas a partida e dada como resultado IMCOMPLETO.
+        :nmrDaJanela: Recebe um valor tipo int que indentifica a janela. """
         if nmrDaJanela == 0:
             comando = f'INSERT INTO partidas (vencedor, rodadas) VALUES ("IMCOMPLETA", {self.rodadas})'
             cursor.execute(comando)
@@ -207,48 +208,49 @@ class Game:
             # Traz de volta a pagina Inicial
             self.root.deiconify()
 
-        elif nmrDaJanela == 1:
+        elif nmrDaJanela == 1: # Janela Vencedor
             self.janelaVencedor.destroy()
             self.root.deiconify()
 
-        elif nmrDaJanela == 2:
+        elif nmrDaJanela == 2: # Janela Historico
             self.janelaHistorico.destroy()
             self.root.deiconify()
 
-        elif nmrDaJanela == 3:
+        elif nmrDaJanela == 3: # Janela Principal
             conexao.close()
             root.destroy()
 
-        elif nmrDaJanela == 4:
+        elif nmrDaJanela == 4: # Janela Historico de rodadas
             self.janelaHistoricoDeRodadas.destroy()
 
     def escolhaComputador(self):
         """ Função que gera um número de 0 a 2 que faz referência a escolha do COMPUTADOR.
         :return: Retorna o número gerado.
         """
-
         computador = randint(0, 2)
 
         return computador
 
     def winner(self, escolhaDoPlayer: int):
-        """ Função que recebe a escolha do player e aciona outras funções para efetuar a validação e trazer o resultado da validação para mostra na tela.
+        """ Função que recebe a escolha do player e aciona outras funções para efetuar a validação e trazer o resultados pra serem mostrado na tela.
+        A cada retorno da função auxiliar embate e verificado e armazendo o resultado em uma lista para que no final da partida seja armazenado no banco de dados.
         :escolhaDoPlayer: Recebe um valor do tipo int.
         :return: Retorna o número de rodadas para ser utilizado em outras funções e armazenado no banco de dados.
         """
+        # Transmite a escolha do PC e Player pra ser utilizada em outras funções.
+        self.escolhaPlayer = escolhaDoPlayer
+        self.pc = self.escolhaComputador()
 
-        pc = self.escolhaComputador()
-
-        embate = self.verificarEmbate(pc, escolhaDoPlayer)
+        embate = self.verificarEmbate(self.pc, escolhaDoPlayer)
 
         self.DBresultado, self.DBjogadaPC, self.DBjogadaPlayer = self.converteJogada(
-            embate, pc, escolhaDoPlayer)
+            embate, self.pc, escolhaDoPlayer)
 
         if embate == 0:
             self.resultadoRodada.config(text="EMPATE")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            self.atulizarRodada()
+            self.congelaRodada()
             self.rodadas += 1
 
         elif embate == 1:
@@ -256,7 +258,7 @@ class Game:
             self.resultadoRodada.config(text="PLAYER\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            self.atulizarRodada()
+            self.congelaRodada()
             self.rodadas += 1
 
         elif embate == 2:
@@ -264,7 +266,7 @@ class Game:
             self.resultadoRodada.config(text="COMPUTADOR\nVENCEU")
             self.jogadas.append(
                 [self.rodadas, self.DBjogadaPC, self.DBjogadaPlayer, self.DBresultado])
-            self.atulizarRodada()
+            self.congelaRodada()
             self.rodadas += 1
 
         if self.x == 3:
@@ -283,7 +285,6 @@ class Game:
         :player: Recebe um valor tipo int que referência a escolha do PLAYER.
         :return: Retorna o resultado onde 0 significa EMPATE, 1 será a vitória do PLAYER e 2 é a vitória do COMPUTADOR.
         """
-
         resultado = 0
 
         if computador == player:
@@ -298,8 +299,13 @@ class Game:
             resultado = 2  # Computador vence
             return resultado
 
-    def converteJogada(self, resultado: int, jogadaPC: Optional[int] = None, jogadaPlayer: Optional[int] = None):
-
+    def converteJogada(self, resultado: int, jogadaPC: int, jogadaPlayer: int):
+        """ FUnção auxiliar para pegar a jogada do Player, PC e o resultado do embate para transforma em uma string pra ser armazenado no banco de dados.
+        :resultado: Recebe um paramétro tipo Int que se refere ao resultado do embate.
+        :jogadaPC: Recebe um paramétro tipo Int que se refere a jogada do PC.
+        :jogadaPlayer: Recebe um paramétro tipo Int que se refere a jogada do player.
+        :return: Retorna os 3 paramétros que recebeu em uma String cada.
+        """
         if jogadaPC == 0:
             jogadaPC = "PEDRA"
         elif jogadaPC == 1:
@@ -324,8 +330,11 @@ class Game:
         return resultado, jogadaPC, jogadaPlayer
 
     def armazenaJogadas(self, jogadas: list):
-
-        self.comando = "SELECT MAX(id_partidas) AS ultimo_id FROM partidas;"
+        """ Função que percorre uma lista de dados de cada rodada de uma partida e armazena eles no banco de dados.
+        Logo quando e finalizado a partida primeiro e gravado a partida e em seguida essa função pega a ultima partida armazenada pelo Id e armazena os dados de cada rodada.
+        :jogadas: Recebe uma lista de dados das rodadas que teve em uma partida.
+        """
+        self.comando = "SELECT MAX(id_partida) AS ultimo_id FROM partidas;"
         cursor.execute(self.comando)
 
         resultado = cursor.fetchone()
@@ -333,12 +342,13 @@ class Game:
 
         for rodada, jogadaPC, jogadaPlayer, resultado in jogadas:
 
-            self.comando = f'INSERT INTO jogadas (id_partida, rodada, move_player_1, move_player_2, resultado) VALUES ({self.ultimoId}, {rodada}, "{jogadaPC}", "{jogadaPlayer}", "{resultado}")'
+            self.comando = f'INSERT INTO rodadas (id_partida, rodada, move_player_1, move_player_2, resultado) VALUES ({self.ultimoId}, {rodada}, "{jogadaPC}", "{jogadaPlayer}", "{resultado}")'
             cursor.execute(self.comando)
             conexao.commit()
 
     def mostrarPartidas(self):
-        self.comando = "SELECT * FROM partidas order by id_partidas"
+        """ Função auxiliar que efetua um SELECT de todas as partidas no banco de dados e insere no Treeview da Janela historico. """
+        self.comando = "SELECT * FROM partidas order by id_partida"
         cursor.execute(self.comando)
         res = cursor.fetchall()
 
@@ -346,38 +356,82 @@ class Game:
             self.boxHistorico.insert("", "end", values=i)
 
     def pegarIds(self):
-        self.comando = "SELECT id_partidas FROM partidas order by id_partidas"
+        """ FUnção auxiliar que efetua um SELECT de todos os Ids de partidas e ordena eles do menor para o maior
+        e é retornado para ser inserido no Combobox da janela historico.
+        :return: Retorna o resultado do SELECT que foi executado. 
+        """
+        self.comando = "SELECT id_partida FROM partidas order by id_partida"
         cursor.execute(self.comando)
         res = cursor.fetchall()
 
         return res
 
     def mostrarJogadas(self):
-        self.comando = f'SELECT * FROM jogadas where id_partida ="{self.id}" order by rodada'
+        """ Função auxiliar que efetua um SELECT baseado no ID da partida que foi escolhido no Combobox da janela historico
+        e mostra no Treeview da janela Historico de rodadas todos dados de cada rodada que teve naquela partida.
+        """
+        self.comando = f'SELECT * FROM rodadas where id_partida ="{self.id}" order by rodada'
         cursor.execute(self.comando)
         res = cursor.fetchall()
 
         for i in res:
             self.boxHistoricoRodadas.insert("", "end", values=i)
 
-    def atulizarRodada(self):
+    def atualizarImagen(self, escolhaPc: int, escolhaPlayer: int):
+        """ Função auxiliar que baseado na escolha do player e pc é selecionado uma imagen respectiva a escolha e é transformada em um formato 
+        que o TkInter aceita para ser mostrado na tela.
+        :escolhaPc: Recebe um paramétro tipo Int que se refere a escolha do PC.
+        :escolhaPlayer: Recebe um paramétro tipo Int que se refere a escolha do Player. 
+        """
+        caminhoImagens = {
+            0: "E:\\Repositorios\\Py-Jokenpo\\Imagens\\pedra.png",
+            1: "E:\\Repositorios\\Py-Jokenpo\\Imagens\\papel.png",
+            2: "E:\\Repositorios\\Py-Jokenpo\\Imagens\\tesoura.png"
+        }
+
+        imgPc = Image.open(caminhoImagens[escolhaPc])
+        imgPlayer = Image.open(caminhoImagens[escolhaPlayer])
+
+        tamanho = (100, 100)
+        imgPc = imgPc.resize(tamanho)
+        imgPlayer = imgPlayer.resize(tamanho)
+
+        imgPc_Tt = ImageTk.PhotoImage(imgPc)
+        imgPlayer_Tk = ImageTk.PhotoImage(imgPlayer)
+
+        self.imgEscolhaPc.config(image=imgPc_Tt)
+        self.imgEscolhaPlayer.config(image=imgPlayer_Tk)
+
+        self.imgEscolhaPc.imagem = imgPc_Tt
+        self.imgEscolhaPlayer.imagem = imgPlayer_Tk
+
+    def congelaRodada(self):
+        """ Função que altera o estado da tela do jogo, desabilitando os botões de escolha do usuário, somente deixando o botão sair habilitado.
+        Além disso efetua a execução de outras funções que altera alguns widgets na tela do jogo.
+        """
         self.pedra.config(state="disable")
         self.papel.config(state="disable")
         self.tesoura.config(state="disable")
-        self.resultadoRodada.after(2200, self.limparResultado)
+        self.atualizarImagen(self.pc, self.escolhaPlayer)
+        self.resultadoRodada.after(2500, self.atualizaResultados)
 
-    def limparResultado(self):
+    def atualizaResultados(self):
+        """ Função que altera o estado e alguns elementos dos widgets, habilitando os depois de 2.5 seg os botões de ação do usuário e alterando os dados 
+        de rodada e resultado na tela do jogo. 
+        """
         self.resultadoRodada.config(text="")
         self.rodadaAtual.config(text=f"RODADA {self.rodadas}")
+        self.vs.config(text=f"VS\n{self.x} - {self.y}")
+        self.imgEscolhaPc.config(image="")
+        self.imgEscolhaPlayer.config(image="")
         self.pedra.config(state="normal")
         self.papel.config(state="normal")
         self.tesoura.config(state="normal")
 
-
-    # Funções de estilização das telas
+    # Funções de estilização das Janelas
 
     def styleJanelaInicial(self):
-
+        """ Função que efetua a estilização dos widgets da Janela Inical. """
         estilo = ttk.Style()
 
         # Labels
@@ -393,7 +447,7 @@ class Game:
         self.btnSairMenu.grid(column=2, row=2)
 
     def styleJanelaJogo(self):
-
+        """ Função que efetua a estilização dos widgets da Janela do Jogo. """
         # Janela
         self.janelaGame.config(background="#D9D9D9")
         self.janelaGame.geometry("650x440+443+212")
@@ -405,7 +459,7 @@ class Game:
         self.pc.config(font=("Inter", 16, "bold"),
                        background="#D9D9D9", foreground="#3F3333")
         self.vs.grid(column=1, row=0, sticky="n")
-        self.vs.config(font=("Inter", 30, "bold"),
+        self.vs.config(font=("Inter", 30, "bold"), anchor="center", justify="center",
                        background="#D9D9D9", foreground="#3F3333")
         self.player.grid(column=2, row=0, sticky="ne")
         self.player.config(font=("Inter", 16, "bold"),
@@ -423,8 +477,14 @@ class Game:
         self.papel.grid(column=1, row=4)
         self.tesoura.grid(column=2, row=4)
 
-    def styleJanelaDaVitoria(self):
+        # Labels com imagen
+        self.imgEscolhaPc.grid(column=0, row=1, rowspan=2)
+        self.imgEscolhaPc.config(anchor="center", justify="center", background="#D9D9D9", foreground="#3F3333")
+        self.imgEscolhaPlayer.grid(column=2, row=1, rowspan=2)
+        self.imgEscolhaPlayer.config(anchor="center", justify="center", background="#D9D9D9", foreground="#3F3333")
 
+    def styleJanelaDaVitoria(self):
+        """ Função que efetua a estilização dos widgets da Janela do Vencedor. """
         # Janela
         self.janelaVencedor.config(background="#D9D9D9")
         self.janelaVencedor.geometry("650x440+443+212")
@@ -446,7 +506,7 @@ class Game:
         self.btnVoltaMenu.grid(column=0, row=0, sticky="nw")
 
     def styleJanelaHistorico(self):
-
+        """ Função que efetua a estilização dos widgets da Janela Hitorico. """
         estilo = ttk.Style()
 
         # Janela
@@ -475,7 +535,7 @@ class Game:
         estilo.configure("Treeview", foreground="#3F3333", font=("Inter", 10))
 
     def styleJanelaHistoricoDeJogadas(self):
-
+        """ Função que efetua a estilização dos widgets da Janela Historico de Rodadas. """
         # Janela
         self.janelaHistoricoDeRodadas.config(background="#D9D9D9")
         self.janelaHistoricoDeRodadas.geometry("650x440+400+100")
@@ -492,7 +552,6 @@ class Game:
 
         # Box
         self.boxHistoricoRodadas.grid(column=0, row=1, columnspan=2)
-
 
 if __name__ == "__main__":
     root = Tk()
